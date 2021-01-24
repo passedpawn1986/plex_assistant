@@ -1,5 +1,7 @@
 # ❱ Plex Assistant
 
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-yellow.svg)](https://github.com/custom-components/hacs) [![hacs_badge](https://img.shields.io/badge/Buy-Me%20a%20Coffee-critical)](https://www.buymeacoffee.com/FgwNR2l)
+
 [Installation](#installation) ｜ [Configuration](#configuration) ｜ [Cast Devices](#cast-devices) ｜ [Commands](#commands)<br>
 [Google Assistant Triggers](#google-assistant-triggers) ｜ [HA Conversation Setup](#home-assistant-conversation-setup)<br><hr>
 
@@ -18,9 +20,10 @@ data:
 
 ***Music and audio aren't built in yet, only shows and movies at the moment.***
 
+## [Troubleshooting Guide](https://github.com/maykar/plex_assistant/blob/master/troubleshooting.md)
+
 ## Supporting Development
 - :coffee:&nbsp;&nbsp;[Buy me a coffee](https://www.buymeacoffee.com/FgwNR2l)
-- :1st_place_medal:&nbsp;&nbsp;[Tip some Crypto](https://github.com/sponsors/maykar)
 - :heart:&nbsp;&nbsp;[Sponsor me on GitHub](https://github.com/sponsors/maykar)
 - :keyboard:&nbsp;&nbsp;Help with [translation](translation.md), development, or documentation
   <br><br>
@@ -37,10 +40,10 @@ Add config to your configuration.yaml file.
 
 | Key          | Default | Necessity    | Description
 | :--          | :------ | :--------    | :----------
-| url          |         | **Required** | The full url to your Plex instance including port.
+| url          |         | **Required** | The full url to your Plex instance including port. [Info for SSL connections here](#ssl-url).
 | token        |         | **Required** | Your Plex token. [How to find your Plex token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/).
 | default_cast |         | Optional     | The name of the cast device to use if none is specified.
-| language     | 'en'    | Optional     | Language code ([Supported Languages](#supported-languages)).
+| language     | 'en'    | Optional     | Language code ([Supported Languages](#currently-supported-languages)).
 | tts_errors   | true    | Optional     | Will speak errors on the selected cast device. For example: when the specified media wasn't found.
 | aliases      |         | Optional     | Set alias names for your devices. Example below, set what you want to call it then it's actual name or machine ID.
 
@@ -100,13 +103,13 @@ You can either use IFTTT or DialogFlow to trigger Plex Assistant with Google Ass
 
 Visit [ifttt.com](https://ifttt.com/) and sign up or sign in.
 
-* Click "Explore" in the top right, then hit the plus sign to make your own applet from scratch
-* Press the plus sign next to "If". Search for and select "Google Assistant"
+* Create a new applet
+* Click "Add" next to "If This". Search for and select "Google Assistant"
 * Select "Say phrase with text ingredient"
 
 Now you can select how you want to trigger this service, you can select up to 3 ways to invoke it. I use things like `tell plex to $` or `have plex $`. The dollar sign will be the phrase sent to this component. See currently supported [commands below](#commands)). You can also set a response from the Google Assistant if you'd like. Select your language (as long as it's supported, see list above), then hit "Create Trigger" to continue.
 
-* Press the plus sign next to "Then"
+* Click "Add" next to "Then That"
 * Search for and select "Webhooks", then select "Make a web request"
 * In the URL field enter the webhook URL HA provided you earlier
 * Select method "Post" and content type "application/json"
@@ -116,24 +119,41 @@ Now you can select how you want to trigger this service, you can select up to 3 
 
 #### In Home Assistant
 
-Finally, add the following automation to your Home Assistant configuration.yaml:
+Finally, add the automation either by using the YAML code or the Blueprint below:
+
+<details>
+  <summary><b>Automation Blueprint</b></summary>
+
+* Go to "Configuration" in your sidebar
+* Click "Blueprints", then "Import Blueprint"
+* Paste this into the URL field `https://gist.github.com/maykar/11f46cdfab0562e683557403b2aa88b4`
+* Click "Preview Blueprint", then "Import Blueprint"
+* Find "Plex Assistant IFTTT Automation" in the list and click "Create Automation"
+* Type anything on the last line (HA currently requires any interaction to save)
+* Hit "Save"
+
+</details>
+
+<details>
+  <summary><b>Automation YAML</b></summary>
 
 ```yaml
-automation:
-  - alias: Plex Assistant Automation
-    trigger:
-    - event_data:
-        action: call_service
-      event_type: ifttt_webhook_received
-      platform: event
-    condition:
-      condition: template
-      value_template: "{{ trigger.event.data.service == 'plex_assistant.command' }}"
-    action:
-    - data_template:
-        command: "{{ trigger.event.data.command }}"
-      service_template: '{{ trigger.event.data.service }}'
+alias: Plex Assistant Automation
+trigger:
+- platform: event
+  event_type: ifttt_webhook_received
+  event_data:
+    action: call_service
+condition:
+  condition: template
+  value_template: "{{ trigger.event.data.service == 'plex_assistant.command' }}"
+action:
+- service: "{{ trigger.event.data.service }}"
+  data:
+    command: "{{ trigger.event.data.command }}"
 ```
+
+</details>
 
 If you prefer Node Red to HA's automations, @1h8fulkat has shared a [Node Red Flow](https://github.com/maykar/plex_assistant/issues/34) to do this.
 
@@ -187,10 +207,10 @@ Add the following to your `configuration.yaml` file
 intent_script:
   Plex:
     speech:
-      text: Command sent to Plex.
+      text: "Command sent to Plex."
     action:
-      - service_template: plex_assistant.command
-        data_template:
+      - service: plex_assistant.command
+        data:
           command: "{{command}}"
 ```
 
@@ -209,10 +229,7 @@ You can now trigger Plex Assistant by saying "Hey Google, tell plex to..." or "H
 | <img src='https://raw.githubusercontent.com/yammadev/flag-icons/master/png/DE%402x.png?raw=true' height='12'>&nbsp;&nbsp;&nbsp;**German**  | `"de"` |  :heavy_check_mark:  |      :heavy_check_mark:    |
 | <img src='https://raw.githubusercontent.com/yammadev/flag-icons/master/png/IT%402x.png?raw=true' height='12'>&nbsp;&nbsp;&nbsp;**Italian**  | `"it"` |  :heavy_check_mark:  |      :heavy_check_mark:    |
 | <img src='https://raw.githubusercontent.com/yammadev/flag-icons/master/png/SV%402x.png?raw=true' height='12'>&nbsp;&nbsp;&nbsp;**Swedish**  | `"sv"` |         :x:          |      :heavy_check_mark:    |
-
-<!---
-| <img src='https://raw.githubusercontent.com/yammadev/flag-icons/master/png/DA%402x.png?raw=true' height='12'>&nbsp;&nbsp;&nbsp;**Danish**  | `"da"` |         :x:          |      :heavy_check_mark:    |
--->
+| <img src='https://raw.githubusercontent.com/yammadev/flag-icons/master/png/DK%402x.png?raw=true' height='12'>&nbsp;&nbsp;&nbsp;**Danish**  | `"da"` |         :x:          |      :heavy_check_mark:    |
 
 #### [Help add support for more languages.](translation.md)<hr>
 
@@ -223,18 +240,18 @@ To use Plex Assistant with Home Assistant's conversation integration simply add 
 ```yaml
 conversation:
   intents:
-    PlexAssistant:
+    Plex:
      # These trigger commands can be changed to suit your needs.
      - "Tell Plex to {command}"
      - "{command} with Plex"
 
 intent_script:
-  PlexAssistant:
+  Plex:
     speech:
       text: Command sent to Plex.
     action:
       service: plex_assistant.command
-      data_template:
+      data:
         command: "{{command}}"
 ```
 
@@ -265,3 +282,15 @@ Be sure to add the name of the device to control commands if it is not the defau
 If no cast device is specified in your command, the `default_cast` device set in your config is used. A cast device will only be found if at the end of the command and when preceded with the word `"on"` or words `"on the"`. Example: *"play friends **ON** downstairs tv"*
 
 I've tried to take into account many different ways that commands could be phrased. If you find a phrase that isn't working and you feel should be implemented, please make an issue.
+
+### SSL URL
+If you use the Plex server network setting of "Required" for "Secure Connections" and do not provide a custom certificate, you need to use your plex.direct URL in the settings. You can find it using the steps below:
+
+* Go to https://app.plex.tv/ and sign in.
+* Hit the vertical 3 dots in the bottom right of any media item (episode, movie, etc)
+* Select "Get Info", then click "View XML"
+* The URL field of your browser now contains your plex.direct URL
+* Copy everything before "/library"
+* It will look something like this: `https://192-168-10-25.xxxxxxxxxxxxxxxxx.plex.direct:32400`
+
+If you use a custom certificate, use the URL that the certificate is for.
